@@ -23,9 +23,11 @@ type spec struct {
 	Text   bool   `envconfig:"DRONE_LOGS_TEXT"`
 	Secret string `envconfig:"DRONE_SECRET"`
 
-	Provider         string `envconfig:"PROVIDER"`
-	Token            string `envconfig:"TOKEN"`
-	BitBucketAddress string `envconfig:"BB_ADDRESS"`
+	Provider              string `envconfig:"PROVIDER"`
+	Token                 string `envconfig:"TOKEN"`
+	BitBucketAddress      string `envconfig:"BB_ADDRESS"`
+	BitbucketClientId     string `envconfig:"BITBUCKET_CLIENT_ID"`
+	BitbucketClientSecret string `envconfig:"BITBUCKET_CLIENT_SECRET"`
 }
 
 func contains(s []string, str string) bool {
@@ -55,19 +57,25 @@ func main() {
 	if spec.Secret == "" {
 		logrus.Fatalln("missing secret key")
 	}
-	if spec.Token == "" {
+	if (spec.Provider == "bitbucket-server" || spec.Provider == "github") && spec.Token == "" {
 		logrus.Fatalln("missing token")
 	}
 	if spec.Provider == "" {
 		logrus.Fatalln("missing provider")
 	} else {
-		providers := []string{"bitbucket-server", "github"}
+		providers := []string{"bitbucket", "bitbucket-server", "github"}
 		if !contains(providers, spec.Provider) {
 			logrus.Fatalln("invalid provider:", spec.Provider)
 		}
 	}
 	if spec.BitBucketAddress == "" && spec.Provider == "bitbucket-server" {
 		logrus.Fatalln("missing bitbucket server address")
+	}
+	if spec.BitbucketClientId == "" && spec.Provider == "bitbucket" {
+		logrus.Fatalln("missing bitbucket client ID")
+	}
+	if spec.BitbucketClientSecret == "" && spec.Provider == "bitbucket" {
+		logrus.Fatalln("missing bitbucket client secret")
 	}
 	if spec.Bind == "" {
 		spec.Bind = ":3000"
@@ -77,6 +85,8 @@ func main() {
 		plugin.New(
 			spec.Token,
 			spec.Provider,
+			spec.BitbucketClientId,
+			spec.BitbucketClientSecret,
 		),
 		spec.Secret,
 		logrus.StandardLogger(),

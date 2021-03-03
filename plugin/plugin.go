@@ -21,9 +21,11 @@ import (
 
 type (
 	plugin struct {
-		token            string
-		provider         string
-		bitbucketAddress string
+		token                 string
+		provider              string
+		bitbucketAddress      string
+		bitbucketClientId     string
+		bitbucketClientSecret string
 	}
 
 	resource struct {
@@ -104,10 +106,12 @@ func marshal(in []*resource) ([]byte, error) {
 }
 
 // New returns a new conversion plugin.
-func New(token string, provider string) converter.Plugin {
+func New(token string, provider string, bitbucketClientId string, bitbucketClientSecret string) converter.Plugin {
 	return &plugin{
-		token:    token,
-		provider: provider,
+		token:                 token,
+		provider:              provider,
+		bitbucketClientId:     bitbucketClientId,
+		bitbucketClientSecret: bitbucketClientSecret,
 	}
 }
 
@@ -154,6 +158,11 @@ func (p *plugin) Convert(ctx context.Context, req *converter.Request) (*drone.Co
 			}
 		case "bitbucket-server":
 			changedFiles, err = providers.GetBBFilesChanged(req.Repo, req.Build, p.token)
+			if err != nil {
+				return nil, err
+			}
+		case "bitbucket":
+			changedFiles, err = providers.GetBitbucketFilesChanged(req.Repo, req.Build, p.bitbucketClientId, p.bitbucketClientSecret)
 			if err != nil {
 				return nil, err
 			}
